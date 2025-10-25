@@ -1,0 +1,52 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_TYPE=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USERNAME=postgres
+      - DATABASE_PASSWORD=digitmindreason
+      - DATABASE_NAME=articles
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=super-secret-key
+      - JWT_EXPIRES_IN=1d
+    depends_on:
+      - postgres
+      - redis
+    command: >
+      sh -c "
+        until pg_isready -h postgres -p 5432 -U postgres; do
+          echo 'Waiting for PostgreSQL...';
+          sleep 2;
+        done;
+        npm run migration:run &&
+        npm run seed &&
+        npm run start:prod
+      "
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=digitmindreason
+      - POSTGRES_DB=articles
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
