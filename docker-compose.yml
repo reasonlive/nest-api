@@ -2,19 +2,19 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - ${PORT}:${PORT}
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - DATABASE_TYPE=postgres
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - DATABASE_TYPE=${DATABASE_TYPE}
       - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USERNAME=postgres
-      - DATABASE_PASSWORD=digitmindreason
-      - DATABASE_NAME=articles
+      - DATABASE_PORT=${DATABASE_PORT}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=super-secret-key
-      - JWT_EXPIRES_IN=1d
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
     depends_on:
       postgres:
         condition: service_healthy
@@ -22,6 +22,7 @@ services:
         condition: service_healthy
     command: >
       sh -c "
+        sh /app/reset-db.sh &&
         npm run migration:run &&
         npm run seed &&
         npm test &&
@@ -31,15 +32,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=digitmindreason
-      - POSTGRES_DB=articles
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
     ports:
       - "5431:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d articles"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5

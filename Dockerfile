@@ -12,12 +12,11 @@ RUN npm ci
 COPY . .
 
 RUN npm run build
+# Копируем .env.example если .env не существует
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
-# Создание пользователя для безопасности
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nestjs -u 1001
-RUN chown -R nestjs:nodejs /app
-USER nestjs
+# Делаем скрипты исполняемыми (если они есть)
+RUN if [ -f reset-db.sh ]; then chmod +x reset-db.sh; fi
 
 EXPOSE 3000
 
