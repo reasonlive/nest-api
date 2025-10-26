@@ -1,73 +1,53 @@
-name: Development Docker Compose Test
+name: Docker Compose Development Stack
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
-  docker-compose-development:
+  test-stack:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create .env file for development
+      - name: Setup environment file
         run: |
-          echo "NODE_ENV=development" > .env
-          echo "PORT=3000" >> .env
-          echo "DATABASE_TYPE=postgres" >> .env
-          echo "DATABASE_HOST=postgres" >> .env
-          echo "DATABASE_PORT=5432" >> .env
-          echo "DATABASE_USERNAME=postgres" >> .env
-          echo "DATABASE_PASSWORD=digitmindreason" >> .env
-          echo "DATABASE_NAME=articles" >> .env
-          echo "REDIS_URL=redis://redis:6379" >> .env
-          echo "JWT_SECRET=super-secret-key" >> .env
-          echo "JWT_EXPIRES_IN=1d" >> .env
+          cat > .env << 'EOF'
+          NODE_ENV=development
+          PORT=3000
+          DATABASE_TYPE=postgres
+          DATABASE_HOST=postgres
+          DATABASE_PORT=5432
+          DATABASE_USERNAME=postgres
+          DATABASE_PASSWORD=digitmindreason
+          DATABASE_NAME=articles
+          REDIS_URL=redis://redis:6379
+          JWT_SECRET=super-secret-key
+          JWT_EXPIRES_IN=1d
+          EOF
 
-      - name: Build and start Docker Compose
-        run: |
-          docker-compose up -d --build
+      - name: Build and start all services
+        uses: isbang/compose-action@v1.5.1
+        with:
+          compose-file: "docker-compose.yml"
+          run-command: |
+            up -d --build --force-recreate
 
-      - name: Wait for services to be healthy
-        run: |
-          timeout 180s bash -c '
-            until docker-compose ps | grep app | grep -q "Up (healthy)"; do
-              echo "Waiting for app to be healthy..."
-              sleep 10
-            done
-          '
+      - name: Verify services are running
+        uses: isbang/compose-action@v1.5.1
+        with:
+          compose-file: "docker-compose.yml"
+          run-command: |
+            ps
+            logs --tail=10 app
+            logs --tail=10 postgres
+            logs --tail=10 redis
 
-      - name: Check running containers status
-        run: |
-          docker-compose ps
-          echo "=== Container status ==="
-          docker-compose ps
-
-      - name: Check application logs
-        run: |
-          echo "=== App logs ==="
-          docker-compose logs app
-          echo "=== Postgres logs ==="
-          docker-compose logs postgres
-          echo "=== Redis logs ==="
-          docker-compose logs redis
-
-      - name: Test application health endpoint
-        run: |
-          sleep 30
-          curl -f http://localhost:3000/health || echo "Health check failed, but continuing..."
-          curl -v http://localhost:3000/ || echo "Main endpoint check completed"
-
-      - name: Run additional tests inside container
-        run: |
-          docker-compose exec -T app npm run test || echo "Tests might have failed, but continuing..."
-          docker-compose exec -T app npm run test:cov || echo "Test coverage might have failed"
-
-      - name: Stop Docker Compose
+      - name: Cleanup
         if: always()
-        run: |
-          docker-compose down
+        uses: isbang/compose-action@v1.5.1
+        with:
+          compose-file: "docker-compose.yml"
+          run-command: "down -v --remove-orphans"
