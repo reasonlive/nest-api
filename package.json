@@ -1,8 +1,9 @@
 {
-  "name": "articles",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "name": "nest-api",
+  "version": "1.0.0",
+  "homepage": "https://reasonlive.github.io/nest-api",
+  "description": "Basic Nest REST API application",
+  "author": "reasonlive",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
