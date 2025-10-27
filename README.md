@@ -10,13 +10,18 @@ $ cd nest-api
 ```
 
 #### Project setup
-
 ```bash
 $ npm install
 $ cp .env.example .env
 ```
 
-#### Compile and run the project
+#### Database initialization
+```bash
+$ npm run migration:run
+$ npm run seed
+```
+
+#### Run the project
 
 ```bash
 # development
@@ -30,7 +35,6 @@ $ npm run start:prod
 ```
 
 #### Run tests
-
 ```bash
 $ npm test
 ```
